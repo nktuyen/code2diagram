@@ -1,0 +1,65 @@
+#!/bin/python3
+import sys
+import os
+import optparse
+
+from task.parsing_task import ParsingTask
+
+COMMA: str = ","
+SEMICOLON: str = ";"
+SPACE: str = " "
+
+def main():
+    parser: optparse.OptionParser = optparse.OptionParser("%prog [options] directory")
+    parser.add_option("-v", "--verbose", action="store_false")
+    parser.add_option("-q", "--quiet", action="store_false")
+    parser.add_option("-r", "--recursive", action="store_false")
+    parser.add_option("-j", "--jobs", default=1)
+    parser.add_option("-x", "--exclude", default=None)
+    parser.add_option("-i", "--include", default="*")
+
+    opts, args = parser.parse_args()
+    if len(args) <= 0:
+        print("No any directory specified")
+        parser.print_usage()
+        sys.exit(1)
+    specified_directory: str = args[0]
+    if not os.path.isdir(specified_directory):
+        if not os.path.isdir(os.path.abspath(specified_directory)):
+            print(f"Error:{specified_directory} is not a valid directory")
+            sys.exit(1)
+    specified_directory = os.path.abspath(specified_directory)
+    parsing_task: ParsingTask = ParsingTask("Parsing")
+    parsing_task.option.verbose = True if opts.verbose is not None else False
+    parsing_task.option.quiet = True if opts.quiet is not None else False
+    parsing_task.option.recursive = True if opts.recursive is not None else False
+    parsing_task.option.jobs = int(opts.jobs) if str(opts.jobs).isnumeric() else 1
+    if opts.exclude is not None:
+        string_list: list = None
+        sub_string: str = ""
+        sub_list: list = None
+        pattern: str = ""
+        string_list = opts.exclude.split(COMMA)
+        for sub_string in string_list:
+            sub_list = sub_string.strip().split(SEMICOLON)
+            for pattern in sub_list:
+                parsing_task.option.excluded_patterns.append(pattern.strip())
+    if opts.include is not None:
+        string_list: list = None
+        sub_string: str = ""
+        sub_list: list = None
+        pattern: str = ""
+        string_list = opts.include.split(COMMA)
+        for sub_string in string_list:
+            sub_list = sub_string.strip().split(SEMICOLON)
+            for pattern in sub_list:
+                parsing_task.option.included_patterns.append(pattern.strip())
+
+    #print(parsing_task.option)
+    parsing_task.run([specified_directory])
+    if parsing_task.status:
+        print("Success")
+    else:
+        print("Failed")
+
+main()
