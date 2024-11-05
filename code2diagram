@@ -4,10 +4,17 @@ import os
 import optparse
 
 from task.parsing_task import ParsingTask
+from task.print_task import PrintTask
 
 COMMA: str = ","
 SEMICOLON: str = ";"
 SPACE: str = " "
+
+COMMAND_PRINT: str = "print"
+COMMAND_COPY: str = "copy"
+COMMAND_MOVE: str = "move"
+COMMAND_DELETE: str = "delete"
+DEFAULT_COMMAND: str = COMMAND_PRINT
 
 def main():
     parser: optparse.OptionParser = optparse.OptionParser("%prog [options] directory")
@@ -17,6 +24,7 @@ def main():
     parser.add_option("-j", "--jobs", default=1)
     parser.add_option("-x", "--exclude", default=None)
     parser.add_option("-i", "--include", default="*")
+    parser.add_option("-c", "--command", default=None)
 
     opts, args = parser.parse_args()
     if len(args) <= 0:
@@ -55,11 +63,22 @@ def main():
             for pattern in sub_list:
                 parsing_task.option.included_patterns.append(pattern.strip())
 
+    parsing_task.option.debug = False
     #print(parsing_task.option)
     parsing_task.run([specified_directory])
-    if parsing_task.status:
-        print("Success")
-    else:
-        print("Failed")
-
+    if not parsing_task.status:
+        sys.exit(1)
+    
+    command: str = opts.command
+    if command is None:
+        command = DEFAULT_COMMAND
+    
+    if command == COMMAND_PRINT:
+        print_task: PrintTask = PrintTask("Printing")
+        print_task.option.verbose = True if opts.verbose is not None else False
+        print_task.option.quiet = True if opts.quiet is not None else False
+        print_task.option.debug = True
+        print_task.run([parsing_task.directory])
+        if not print_task.status:
+            sys.exit(1)
 main()

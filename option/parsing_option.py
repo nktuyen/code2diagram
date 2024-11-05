@@ -1,8 +1,8 @@
 from option.base_option import BaseOption
 
 class ParsingOption(BaseOption):
-    def __init__(self, task = None, verbose: bool = False, quiet: bool = False, recursive: bool = False, jobs: int = 1, excluded: list = None, included: list = None) -> None:
-        super().__init__(task, verbose, quiet)
+    def __init__(self, verbose: bool = False, quiet: bool = False, recursive: bool = False, jobs: int = 1, excluded: list = None, included: list = None) -> None:
+        super().__init__(verbose, quiet)
         self._recursive: bool = recursive
         self._jobs: int = jobs
         self._excluded: list = excluded
