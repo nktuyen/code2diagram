@@ -3,7 +3,7 @@ import sys
 import os
 import optparse
 
-from task.parsing_task import ParsingTask
+from task.walking_task import WalkingTask
 from task.print_task import PrintTask
 
 COMMA: str = ","
@@ -37,7 +37,7 @@ def main():
             print(f"Error:{specified_directory} is not a valid directory")
             sys.exit(1)
     specified_directory = os.path.abspath(specified_directory)
-    parsing_task: ParsingTask = ParsingTask("Parsing")
+    parsing_task: WalkingTask = WalkingTask("Parsing")
     parsing_task.option.verbose = True if opts.verbose is not None else False
     parsing_task.option.quiet = True if opts.quiet is not None else False
     parsing_task.option.recursive = True if opts.recursive is not None else False
