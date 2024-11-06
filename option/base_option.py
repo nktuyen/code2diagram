@@ -5,7 +5,7 @@ class BaseOption:
         self._debug: bool = False
 
     def __str__(self) -> str:
-        return f"verbose:{self.verbose}\nquiet:{self.quiet}\ndebug:{self.debug}"
+        return f" verbose:{self.verbose}\n quiet:{self.quiet}\n debug:{self.debug}"
 
     @property
     def verbose(self) -> bool:

@@ -37,12 +37,14 @@ class BaseTask:
     
     def _pre_run(self, args = None) -> bool:
         if not self.option.quiet and self.option.verbose:
-            print(f"{self.name} begin")
+            print(f"{self.name.capitalize()} begin")
+            print("OPTIONS:")
+            print(self.option)
         return True
 
     def _post_run(self) -> None:
         if not self.option.quiet and self.option.verbose:
-            print(f"{self.name} end")
+            print(f"{self.name.capitalize()} end")
 
     def _on_run(self, args = None) -> bool:
         return False

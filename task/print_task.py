@@ -19,6 +19,20 @@ class PrintTask(WalkingTask):
     @property
     def directory(self) -> DirectoryModel:
         return self._directory
+    
+    def _pre_parse_args(self, parser):
+        super()._pre_parse_args(parser)
+
+        parser.add_option("-o", "--output-file", default=None)
+    
+    def _post_parse_args(self, opts, args) -> bool:
+        if not super()._post_parse_args(opts, args):
+            return False
+        
+        if opts is not None:
+            if opts.output_file is not None:
+                self.option.output_file = opts.output_file
+        return True
 
     def _pre_run(self, args = None) -> bool:
         if not super()._pre_run(args):

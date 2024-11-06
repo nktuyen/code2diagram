@@ -9,7 +9,7 @@ class WalkingOption(BaseOption):
         self._included: list = included
 
     def __str__(self) -> str:
-        return super().__str__() + f"\nrecursive:{self.recursive}\njobs:{self.jobs}\nexcluded_patterns:{self.excluded_patterns}\nincluded_patterns:{self.included_patterns}"
+        return super().__str__() + f"\n recursive:{self.recursive}\n jobs:{self.jobs}\n excluded_patterns:{self.excluded_patterns}\n included_patterns:{self.included_patterns}"
 
     @property
     def recursive(self) -> bool:
