@@ -2,7 +2,7 @@ class BaseOption:
     def __init__(self, verbose: bool = False, quiet: bool = False) -> None:
         self._verbose: bool = verbose
         self._quiet: bool = quiet
-        self._debug: bool = True
+        self._debug: bool = False
 
     def __str__(self) -> str:
         return f"verbose:{self.verbose}\nquiet:{self.quiet}\ndebug:{self.debug}"

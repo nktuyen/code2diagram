@@ -1,8 +1,8 @@
-from option.base_option import BaseOption
+from option.walking_option import WalkingOption
 
-class PrintOption(BaseOption):
-    def __init__(self, verbose: bool = False, quiet: bool = False, print_to_file: str = None):
-        super().__init__(verbose, quiet)
+class PrintOption(WalkingOption):
+    def __init__(self, verbose: bool = False, quiet: bool = False, recursive: bool = False, jobs: int = 1, excluded: list = None, included: list = None, print_to_file: str = None):
+        super().__init__(verbose, quiet, recursive, jobs, excluded, included)
         self._print_to_file: str = print_to_file
 
 
