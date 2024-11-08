@@ -52,7 +52,7 @@ class WalkingOption(BaseOption):
         return self._system_files
     @system_files.setter
     def system_files(self, val: bool):
-        self.system_files = val
+        self._system_files = val
     
     @property
     def link_files(self) -> bool:

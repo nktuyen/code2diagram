@@ -39,10 +39,6 @@ class WalkingTask(BaseTask):
             relative_path = full_path[len(self.directory.name):]
             if relative_path.startswith(os.sep):
                 relative_path = relative_path[len(os.sep):]
-            if self.option.debug:
-                print(f"[DEBUG]Name:{child_path}")
-                print(f"[DEBUG]Relative name to root:{relative_path}")
-                print(f"[DEBUG]Full name:{full_path}")
             ignored_flag = False #Reset filter result
             #Filter excluded
             if len(self.option.excluded_patterns) > 0:

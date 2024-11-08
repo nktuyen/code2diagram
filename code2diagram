@@ -54,8 +54,10 @@ def main():
     #task.option.debug = True
     task.run()
     if task.status:
-        print(f"Success")
+        if task.option.verbose:
+            print("Success")
     else:
-        print("Failed")
+        if task.option.verbose:
+            print("Failed")
 
 main()

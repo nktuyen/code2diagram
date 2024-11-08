@@ -154,7 +154,7 @@ class PrintTask(WalkingTask):
             COLUMN_NAME_REMARK : Column(COLUMN_NAME_REMARK, 5)
         }
         self._rows: list = []
-        self._header_row: Row = Row(0)
+        self._header_row: Row = Row(-1)
         self._header_row.cells.append(Cell(self.index_column.name, self._header_row, self.index_column))
         self._header_row.cells.append(Cell(self.name_column.name, self._header_row, self.name_column))
         self._header_row.cells.append(Cell(self.type_column.name, self._header_row, self.type_column))
@@ -242,6 +242,8 @@ class PrintTask(WalkingTask):
         super()._pre_parse_args(parser)
 
         parser.add_option("-o", "--output-file", default=None, help="Support excel(.xls,.xlsx), csv(.csv) and text format")
+        parser.add_option("", "--indent", default=1, help="Number of spaces use to indent children. 0 means no indent")
+        parser.add_option("", "--no-header", action="store_false", help="Do not print header row")
     
     def _post_parse_args(self, opts, args) -> bool:
         if not super()._post_parse_args(opts, args):
@@ -257,6 +259,15 @@ class PrintTask(WalkingTask):
                         if isinstance(ex, ModuleNotFoundError):
                             print("[E]Cannot print to excel file because xlsxwriter module is not installed")
                             return False
+            if opts.indent is not None:
+                try:
+                    self.option.indent = int(opts.indent)
+                except:
+                    self.option.indent = 0
+            if opts.no_header is not None:
+                self.option.header = False
+            else:
+                self.option.header = True
         return True
 
     def _pre_run(self, args = None) -> bool:
@@ -266,6 +277,11 @@ class PrintTask(WalkingTask):
         for col in self.columns.values():
             if col.initial_width <= 0:
                 col.width = len(self._column_separator + col.name)
+        
+        if isinstance(self.option.indent, int) and (self.option.indent >= 0):
+            self._depth_separator = S_space * self.option.indent
+        else:
+            self._depth_separator = ""
 
         return True
 
@@ -389,10 +405,8 @@ class PrintTask(WalkingTask):
             if self.remark_column.width < len(string):
                 self.remark_column.width = len(string)
         return new_link
-
-    def _on_run(self, args = None) -> bool:
-        self.rows.clear()
-        self.rows.append(self.header_row)
+    
+    def __console_print(self) -> bool:
         row: Row = None
         cell: Cell = None
         item: IoModel = None
@@ -400,56 +414,91 @@ class PrintTask(WalkingTask):
         string: str = ""
         row_string: str = ""
         row_bottom: str = ""
+        try:
+            for row in self.rows:
+                row_string = ""
+                row_bottom = ""
+                item = row.tag
+                for cell in row.cells:
+                    #Update cell's value
+                    if row.index > self.header_row.index:
+                        if cell.column.name == COLUMN_NAME_INDEX:
+                            cell.value = str(row.index)
+                        elif cell.column.name == COLUMN_NAME_NAME:
+                            cell.value = (self._depth_separator) * item.depth + item.base_name
+                        elif cell.column.name == COLUMN_NAME_TYPE:
+                            cell.value = item.kind.name
+                        elif cell.column.name == COLUMN_NAME_SIZE:
+                            cell.value = str(item.size)
+                        elif cell.column.name == COLUMN_NAME_EXTENSION:
+                            cell.value = item.extension
+                        elif cell.column.name == COLUMN_NAME_REMARK:
+                            cell.value = ""
+                    padding = cell.column.width
+                    #Print left border
+                    row_string += (self._column_separator)
+                    row_bottom += S_plus
+                    padding -= len(self._column_separator)
+                    #Print cell's value
+                    if cell.column.align == Alignment.CENTER:
+                        string = ((padding / 2 - len(cell.value) / 2) * S_space)
+                        row_string += (string)
+                        row_bottom += S_minus * len(string)
+                        padding -= len(string)
+                        row_string += (cell.value)
+                        row_bottom += S_minus * len(cell.value)
+                        padding += len(cell.value)
+                        row_string += (padding * S_space)
+                        row_bottom += (padding * S_minus)
+                    elif cell.column.align == Alignment.RIGHT:
+                        string = (padding - len(cell.value)) * S_space
+                        row_string += (string)
+                        row_bottom += S_minus * len(string)
+                        row_string += (cell.value)
+                        row_bottom += S_minus * len(cell.value)
+                    else: #cell.column.align == Alignment.LEFT:
+                        row_string += (cell.value)
+                        row_bottom += S_minus * len(cell.value)
+                        padding -= len(cell.value)
+                        row_string += (padding * S_space)
+                        row_bottom += (padding * S_minus)
+                    if cell.column.index == len(self.columns)-1: #Last cell
+                        row_string += self._column_separator
+                        row_bottom += S_plus
+                if row.index == self.header_row.index:
+                    print(row_bottom)
+                print(row_string)
+                if row.index == self.header_row.index:
+                    print(row_bottom)
+        except Exception as ex:
+            print(f"[E]{ex}")
+            return False
+        return True
+
+    def __csv_print(self) -> bool:
+        return True
+    
+    def __excel_print(self) -> bool:
+        return True
+    
+    def __text_print(self) -> bool:
+        return True
+
+    def _on_run(self, args = None) -> bool:
+        self.rows.clear()
+        if self.option.header:
+            self.rows.append(self.header_row)
+            self.header_row.index = 0
+        else:
+            self.header_row.index = -1
         if not super()._on_run(args):
             return False
-        for row in self.rows:
-            row_string = ""
-            row_bottom = ""
-            item = row.tag
-            for cell in row.cells:
-                #Update cell's value
-                if row.index > 0:
-                    if cell.column.name == COLUMN_NAME_INDEX:
-                        cell.value = str(row.index)
-                    elif cell.column.name == COLUMN_NAME_NAME:
-                        cell.value = (self._depth_separator) * item.depth + item.base_name
-                    elif cell.column.name == COLUMN_NAME_TYPE:
-                        cell.value = item.kind.name
-                    elif cell.column.name == COLUMN_NAME_SIZE:
-                        cell.value = str(item.size)
-                    elif cell.column.name == COLUMN_NAME_EXTENSION:
-                        cell.value = item.extension
-                    elif cell.column.name == COLUMN_NAME_REMARK:
-                        cell.value = ""
-                padding = cell.column.width
-                #Print left border
-                row_string += (self._column_separator)
-                row_bottom += S_plus
-                padding -= len(self._column_separator)
-                #Print cell's value
-                if cell.column.align == Alignment.CENTER:
-                    string = ((padding / 2 - len(cell.value) / 2) * S_space)
-                    row_string += (string)
-                    row_bottom += S_minus * len(string)
-                    padding -= len(string)
-                    row_string += (cell.value)
-                    row_bottom += S_minus * len(cell.value)
-                    padding += len(cell.value)
-                    row_string += (padding * S_space)
-                    row_bottom += (padding * S_minus)
-                elif cell.column.align == Alignment.RIGHT:
-                    string = (padding - len(cell.value)) * S_space
-                    row_string += (string)
-                    row_bottom += S_minus * len(string)
-                    row_string += (cell.value)
-                    row_bottom += S_minus * len(cell.value)
-                else: #cell.column.align == Alignment.LEFT:
-                    row_string += (cell.value)
-                    row_bottom += S_minus * len(cell.value)
-                    padding -= len(cell.value)
-                    row_string += (padding * S_space)
-                    row_bottom += (padding * S_minus)
-            print(row_string)
-            if row.index == 0:
-                print(row_bottom)
-        return True
+        if self.option.output_file is not None:
+            if self.option.output_file.lower().endswith(".csv"):
+                return self.__csv_print()
+            elif self.option.output_file.lower().endswith(".xlsx") or self.option.output_file.lower().endswith(".xlsx"):
+                return self.__excel_print()
+            else:
+                return self.__text_print()
+        else:
+            return self.__console_print()
