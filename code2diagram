@@ -51,6 +51,7 @@ def main():
     args = args[1:]
     if not task.parse_args(args):
         sys.exit(1)
+    #task.option.debug = True
     task.run()
     if task.status:
         print(f"Success")

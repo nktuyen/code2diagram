@@ -48,8 +48,6 @@ class WalkingTask(BaseTask):
             if len(self.option.excluded_patterns) > 0:
                 for pattern in self.option.excluded_patterns:
                     if fnmatch.fnmatch(relative_path, pattern):
-                        if self.option.debug:
-                            print(f"[DEBUG]{relative_path} -> Ignored (matched {pattern})")
                         ignored_flag = True
                         break
             if ignored_flag:
@@ -63,57 +61,49 @@ class WalkingTask(BaseTask):
                             ignored_flag = False
                             break
                         if fnmatch.fnmatch(relative_path, pattern):
-                            if self.option.debug:
-                                print(f"[DEBUG]{relative_path} -> Included (matched {pattern})")
                             ignored_flag = False
                             break
                 if ignored_flag:
                     continue
-                if self.option.debug:
-                    print(f"[DEBUG]{relative_path} -> To be parsed (is file)")
-                file_model: FileModel = self._on_file(full_path)
+                file_model: FileModel =  FileModel(full_path, directory)
+                file_model.relative_name = relative_path
+                file_model.parent = directory
+                file_model.depth = directory.depth + 1
+                file_model.parent.size += file_model.size
+                file_model = self._on_file(file_model)
                 if file_model is not None:
-                    file_model.relative_name = relative_path
-                    file_model.parent = directory
-                    file_model.depth = directory.depth + 1
-                    file_model.parent.size += file_model.size
                     directory.children.append(file_model)
-                self._on_file(file_model)
-            elif os.path.islink(full_path):
-                if self.option.debug:
-                    print(f"[DEBUG]{relative_path} -> Ignored (is link)")
-                link_model: SymLinkModel = self._on_link(full_path)
+            elif os.path.islink(full_path) and self.option.link_files:
+                link_model: SymLinkModel = SymLinkModel(full_path, directory)
+                link_model.relative_name = relative_path
+                link_model.parent = directory
+                link_model.depth = directory.depth + 1
+                link_model = self._on_symlink(link_model)
                 if link_model is not None:
-                    link_model.relative_name = relative_path
-                    link_model.parent = directory
-                    link_model.depth = directory.depth + 1
                     directory.children.append(link_model)
             elif os.path.isdir(full_path):
-                dir_model: DirectoryModel = self._on_directory(full_path)
+                dir_model: DirectoryModel = DirectoryModel(full_path, directory)
+                dir_model.relative_name = relative_path
+                dir_model.parent = directory
+                dir_model.depth = directory.depth + 1
+                dir_model = self._on_directory(dir_model)
                 if dir_model is not None:
-                    dir_model.relative_name = relative_path
-                    dir_model.parent = directory
-                    dir_model.depth = directory.depth + 1
                     if self.option.recursive:
-                        if self.option.debug:
-                            print(f"[DEBUG]{relative_path} -> To be recursively parsed (is directory and recursive option is specified)")
                         dir_model = self.__walk_dir(dir_model)
                         dir_model.parent.size += dir_model.size
                         directory.children.append(dir_model)
                     else:
-                        if self.option.debug:
-                            print(f"[DEBUG]{relative_path} -> Ignored (is directory but recursive option is not specified)")
                         directory.children.append(dir_model)
         return directory
     
-    def _on_directory(self, dir_path: str) -> DirectoryModel:
-        return DirectoryModel(dir_path)
+    def _on_directory(self, dir_model: DirectoryModel) -> DirectoryModel:
+        return dir_model
 
-    def _on_file(self, file_path: str) -> FileModel:
-        return FileModel(file_path)
+    def _on_file(self, file_model: FileModel) -> FileModel:
+        return file_model
     
-    def _on_link(self, link_path: str) -> SymLinkModel:
-        return SymLinkModel(link_path)
+    def _on_symlink(self, link_model: SymLinkModel) -> SymLinkModel:
+        return link_model
     
     def _pre_parse_args(self, parser):
         super()._pre_parse_args(parser)
@@ -121,6 +111,9 @@ class WalkingTask(BaseTask):
         parser.add_option("-j", "--jobs", default=1)
         parser.add_option("-x", "--exclude", default=None)
         parser.add_option("-i", "--include", default="*")
+        parser.add_option("", "--system-files", action="store_false", help="Include system files or not. System files are ignored if not specified")
+        parser.add_option("", "--hidden-files", action="store_false", help="Include hidden files or not. Hidden files are ignored if not specified")
+        parser.add_option("", "--link-files", action="store_false", help="Include symbol links or not. Symbol links are ignored if not specified")
 
     def _post_parse_args(self, opts, args) -> bool:
         super()._post_parse_args(opts, args)
@@ -139,6 +132,12 @@ class WalkingTask(BaseTask):
                     string_list: list = string.split(S_semicolon)
                     for pattern in string_list:
                         self.option.included_patterns.append(pattern.strip())
+            if opts.system_files is not None:
+                self.option.system_files = True
+            if opts.hidden_files is not None:
+                self.option.hidden_files = True
+            if opts.link_files is not None:
+                self.option.link_files = True
         if args is None or len(args) == 0:
             print("[E]No any directory specified")
             return False

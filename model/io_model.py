@@ -58,3 +58,10 @@ class IoModel(BaseModel):
         if self._stat is None:
             self._stat = os.stat(self.name)
         return self._stat
+    
+    @property
+    def extension(self) -> str:
+        if not isinstance(self.name, str):
+            return ""
+        head, tail = os.path.splitext(self.name)
+        return tail
